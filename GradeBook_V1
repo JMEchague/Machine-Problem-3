@@ -1,0 +1,445 @@
+student_names    = []   # str   - student's full name
+student_ids      = []   # int   - unique student ID (1001, 1002...)
+student_count    = 0    # int   - counter to generate student IDs
+
+# Rigid Institutional Grading Scheme Setup
+# Total Course Grade = (Lecture * 70%) + (Laboratory * 30%)
+category_names = [
+    "Lec - Class Standing", # 70% Course * 60% Component = 42% Total
+    "Lec - Midterm Exam",   # 70% Course * 15% Component = 10.5% Total
+    "Lec - Final Exam",     # 70% Course * 25% Component = 17.5% Total
+    "Lab - Class Standing", # 30% Course * 60% Component = 18% Total
+    "Lab - Midterm Exam",   # 30% Course * 15% Component = 4.5% Total
+    "Lab - Final Exam"      # 30% Course * 25% Component = 7.5% Total
+]
+
+category_weights = [0.42, 0.105, 0.175, 0.18, 0.045, 0.075]
+
+# Flat transaction/grade logs
+grade_student_ids = []  # int   - links to student_ids
+grade_categories  = []  # str   - links to category_names
+grade_scores      = []  # float - the numeric score (0.0 to 100.0)
+
+
+# ============================================================
+#   BANNER
+# ============================================================
+
+def show_banner():
+    print("╔══════════════════════════════════════════════╗")
+    print("║                                              ║")
+    print("║        Welcome to  G r a d e B o o k         ║")
+    print("║                                              ║")
+    print("║    Official Lecture & Laboratory Manager     ║")
+    print("║         Passing Raw Score Cutoff: 70         ║")
+    print("║                                              ║")
+    print("╚══════════════════════════════════════════════╝")
+    print()
+
+
+# ============================================================
+#   HELPER FUNCTIONS
+# ============================================================
+
+def print_line():
+    print("------------------------------------------------")
+
+
+def print_header(title):
+    print()
+    print("================================================")
+    print("  " + title)
+    print("================================================")
+
+
+def get_float_input(prompt):
+    while True:
+        raw = input(prompt)
+        try:
+            value = float(raw)
+            if value < 0 or value > 100:
+                print("  Error: Score must be between 0 and 100. Try again.")
+            else:
+                return value
+        except ValueError:
+            print("  Error: '" + raw + "' is not a valid number. Try again.")
+
+
+def get_student_id():
+    while True:
+        raw = input("  Enter Student ID number: ")
+        try:
+            number = int(raw)
+            return number
+        except ValueError:
+            print("  Error: Student ID must be a whole number.")
+
+
+def is_valid_student(student_id):
+    index = student_id - 1001
+    if index >= 0 and index < len(student_names):
+        return True
+    else:
+        return False
+
+
+def get_student_index(student_id):
+    return student_id - 1001
+
+
+def get_status_and_letter(score):
+    # Enforces the mandatory 70 passing raw score threshold
+    if score >= 90.0:
+        return "PASSED", "A"
+    elif score >= 80.0:
+        return "PASSED", "B"
+    elif score >= 70.0:
+        return "PASSED", "C"
+    else:
+        return "FAILED", "F"
+
+
+def calculate_component_avg(student_id, prefix):
+    # Calculates isolated averages for either "Lec" or "Lab" components
+    # Normalized to standard 100% scale internally based on syllabus weights (60%, 15%, 25%)
+    cs_sum = 0.0;  cs_count = 0
+    me_sum = 0.0;  me_count = 0
+    fe_sum = 0.0;  fe_count = 0
+
+    g = 0
+    while g < len(grade_student_ids):
+        if grade_student_ids[g] == student_id:
+            if grade_categories[g] == (prefix + " - Class Standing"):
+                cs_sum = cs_sum + grade_scores[g]
+                cs_count = cs_count + 1
+            elif grade_categories[g] == (prefix + " - Midterm Exam"):
+                me_sum = me_sum + grade_scores[g]
+                me_count = me_count + 1
+            elif grade_categories[g] == (prefix + " - Final Exam"):
+                fe_sum = fe_sum + grade_scores[g]
+                fe_count = fe_count + 1
+        g = g + 1
+
+    # Fallback default values to 0 if no structural evaluations are logged yet
+    cs_avg = (cs_sum / cs_count) if cs_count > 0 else 0.0
+    me_avg = (me_sum / me_count) if me_count > 0 else 0.0
+    fe_avg = (fe_sum / fe_count) if fe_count > 0 else 0.0
+
+    # Apply standard distribution weights: 60% CS, 15% ME, 25% FE
+    return (cs_avg * 0.60) + (me_avg * 0.15) + (fe_avg * 0.25)
+
+
+def calculate_student_final(student_id):
+    # Computes final institutional composite score: 70% Lecture + 30% Laboratory
+    if len(grade_student_ids) == 0:
+        return -1.0
+        
+    lec_grade = calculate_component_avg(student_id, "Lec")
+    lab_grade = calculate_component_avg(student_id, "Lab")
+    
+    return (lec_grade * 0.70) + (lab_grade * 0.30)
+
+
+# ============================================================
+#   FEATURE FUNCTIONS
+# ============================================================
+
+# ── 1. Add Student ───────────────────────────────────────────
+
+def add_student():
+    global student_count
+    print_header("Add New Student")
+
+    name = input("  Enter student's full name: ")
+    if name == "":
+        print("  Error: Name cannot be blank.")
+        return
+
+    student_count = student_count + 1
+    student_id = 1000 + student_count
+
+    student_names.append(name.title())
+    student_ids.append(student_id)
+
+    print()
+    print("  ✔  Student added successfully!")
+    print_line()
+    print("  Student ID   : " + str(student_id))
+    print("  Student Name : " + name.title())
+    print_line()
+
+
+# ── 2. View Grading Categories & Weights ─────────────────────
+
+def manage_categories():
+    print_header("Grading Categories & Official Weights")
+    print("  LECTURE COMPONENT: 70% of Course Grade")
+    print("    - Class Standing (CS)      : 60% of Lec")
+    print("       (Includes: 3+ Long Quizzes, Evaluation, ")
+    print("        Participation, Short Quizzes, Exercises)")
+    print("    - Midterm Exam (ME)        : 15% of Lec")
+    print("    - Final Exam (FE)          : 25% of Lec")
+    print_line()
+    print("  LABORATORY COMPONENT: 30% of Course Grade")
+    print("    - Class Standing (CS)      : 60% of Lab")
+    print("       (Includes: Lab Exercises, Machine Probs, ")
+    print("        Evaluation, Projects, Practical Exam)")
+    print("    - Midterm Exam (ME)        : 15% of Lab")
+    print("    - Final Exam (FE)          : 25% of Lab")
+    print_line()
+    print("  * POLICY NOTE:")
+    print("    Passing Raw Score is locked at 70.0%.")
+    print("    Official grades for Lecture & Lab are uniform.")
+    print()
+
+
+# ── 3. Enter Grade (Upgraded with Choice Loop & Exit) ────────
+
+def enter_grade():
+    print_header("Enter Student Grades")
+
+    if len(student_names) == 0:
+        print("  Error: No students registered yet.")
+        return
+
+    student_id = get_student_id()
+    if is_valid_student(student_id) == False:
+        print("  Error: Student ID " + str(student_id) + " does not exist.")
+        return
+
+    s_index = get_student_index(student_id)
+    print("  Recording entry mode for student: " + student_names[s_index])
+
+    # Continuous grade loop block 
+    grading_active = True
+    while grading_active == True:
+        print_line()
+        print("  Select Target Evaluation Subcategory:")
+        i = 0
+        while i < len(category_names):
+            print("  " + str(i + 1) + " - " + category_names[i])
+            i = i + 1
+        print("  0 - Finish & Exit to Main Menu")
+        print_line()
+        
+        cat_choice = input("  Select option (0-6): ")
+        
+        if cat_choice == "0":
+            print()
+            print("  Returning to main configuration engine...")
+            grading_active = False
+        else:
+            try:
+                cat_idx = int(cat_choice) - 1
+                if cat_idx < 0 or cat_idx >= len(category_names):
+                    print("  Error: Invalid assignment index. Select 0 to 6.")
+                else:
+                    selected_category = category_names[cat_idx]
+                    score = get_float_input("  Enter raw score (0.0 - 100.0) for [" + selected_category + "]: ")
+
+                    # Log entry instantly to parallel tracking storage arrays
+                    grade_student_ids.append(student_id)
+                    grade_categories.append(selected_category)
+                    grade_scores.append(score)
+
+                    print()
+                    print("  ✔  Grade saved successfully!")
+                    print("  [" + student_names[s_index] + " -> " + selected_category + " -> " + str(score) + "]")
+            except ValueError:
+                print("  Error: Please input a clean matching whole number choice (0-6).")
+
+
+# ── 4. Generate Report Card ──────────────────────────────────
+
+def generate_report_card():
+    print_header("Generate Report Card")
+
+    if len(student_names) == 0:
+        print("  No students found.")
+        return
+
+    student_id = get_student_id()
+    if is_valid_student(student_id) == False:
+        print("  Error: Student ID " + str(student_id) + " does not exist.")
+        return
+
+    s_index = get_student_index(student_id)
+    
+    lec_grade = calculate_component_avg(student_id, "Lec")
+    lab_grade = calculate_component_avg(student_id, "Lab")
+    final_score = calculate_student_final(student_id)
+
+    print()
+    print_line()
+    print("                  STUDENT REPORT CARD           ")
+    print_line()
+    print("  Student ID   : " + str(student_id))
+    print("  Student Name : " + student_names[s_index])
+    print_line()
+    print("  COMPONENT PERFORMANCE:")
+    print("  - Lecture Component (70%)    : " + str(round(lec_grade, 2)) + "%")
+    print("  - Laboratory Component (30%) : " + str(round(lab_grade, 2)) + "%")
+    print_line()
+    
+    if final_score >= 0:
+        status, letter = get_status_and_letter(final_score)
+        print("  FINAL UNIFIED RAW SCORE      : " + str(round(final_score, 2)) + "%")
+        print("  COURSE OUTCOME STATUS        : " + status)
+        print_line()
+        print("  * TRANSCRIPT SYLLABUS ENTRIES:")
+        print("    Lecture Transcript Grade   : " + letter)
+        print("    Laboratory Transcript Grade: " + letter)
+        print("    (Grades match per academic policy directive)")
+    else:
+        print("  FINAL WEIGHTED SCORE         : No scores recorded.")
+    print_line()
+
+
+# ── 5. View Grade Statistics & Distribution ──────────────────
+
+def view_stats():
+    print_header("Class Grade Distribution & Stats")
+
+    if len(student_names) == 0:
+        print("  No student records present.")
+        return
+
+    total_sum = 0.0
+    graded_students_count = 0
+
+    count_passed = 0
+    count_failed = 0
+
+    i = 0
+    while i < len(student_ids):
+        f_score = calculate_student_final(student_ids[i])
+        if f_score >= 0:
+            total_sum = total_sum + f_score
+            graded_students_count = graded_students_count + 1
+            
+            status, letter = get_status_and_letter(f_score)
+            if status == "PASSED":
+                count_passed = count_passed + 1
+            else:
+                count_failed = count_failed + 1
+        i = i + 1
+
+    if graded_students_count == 0:
+        print("  No grading metrics recorded to compile data from.")
+        return
+
+    class_average = total_sum / graded_students_count
+
+    print_line()
+    print("  OVERALL PERFORMANCE SUMMARY")
+    print_line()
+    print("  Total Evaluated Students : " + str(graded_students_count))
+    print("  Overall Class Average     : " + str(round(class_average, 2)) + "%")
+    print("  Passing Raw Score Criteria: 70.0%")
+    print_line()
+    print("  OUTCOME DISTRIBUTION MATRIX")
+    print_line()
+    print("  PASSED (>= 70) : " + str(count_passed).ljust(5) + " (" + str(round((count_passed/graded_students_count)*100, 1)) + "%)")
+    print("  FAILED (< 70)  : " + str(count_failed).ljust(5) + " (" + str(round((count_failed/graded_students_count)*100, 1)) + "%)")
+    print_line()
+
+
+# ── 6. View All Students ─────────────────────────────────────
+
+def view_all_students():
+    print_header("All Registered Students")
+
+    if len(student_names) == 0:
+        print("  No student records exist.")
+        return
+
+    print_line()
+    print("  No.    Student ID    Student Name          Final Grade Status")
+    print_line()
+
+    i = 0
+    while i < len(student_names):
+        student_id = 1001 + i
+        number_str  = str(i + 1) + "."
+        id_str      = str(student_id)
+        name_str    = student_names[i]
+        
+        final_score = calculate_student_final(student_id)
+        if final_score >= 0:
+            status, letter = get_status_and_letter(final_score)
+            grade_str = str(round(final_score, 1)) + "% (" + letter + ") - " + status
+        else:
+            grade_str = "UNGRADED"
+
+        print("  " + number_str.ljust(6) + id_str.ljust(14) + name_str.ljust(22) + grade_str)
+        i = i + 1
+
+    print_line()
+    print("  Total Students: " + str(len(student_names)))
+    print_line()
+
+
+# ============================================================
+#   MAIN MENU
+# ============================================================
+
+def show_menu():
+    print()
+    print("  ┌─────────────────────────────────────────┐")
+    print("  │              MAIN MENU                  │")
+    print("  ├─────────────────────────────────────────┤")
+    print("  │  1.  Add New Student                    │")
+    print("  │  2.  View Syllabus Weights & Criteria   │")
+    print("  │  3.  Enter Student Grades               │")
+    print("  │  4.  Generate Student Report Card       │")
+    print("  │  5.  View Class Grade Stats & Dist.     │")
+    print("  │  6.  View All Student Overviews         │")
+    print("  │  0.  Exit                               │")
+    print("  └─────────────────────────────────────────┘")
+    print()
+
+
+# ============================================================
+#   ENTRY POINT - main() function
+# ============================================================
+
+def main():
+    show_banner()
+
+    running = True
+    while running == True:
+        show_menu()
+        choice = input("  Enter your choice: ")
+
+        if choice == "1":
+            add_student()
+        elif choice == "2":
+            manage_categories()
+        elif choice == "3":
+            enter_grade()
+        elif choice == "4":
+            generate_report_card()
+        elif choice == "5":
+            view_stats()
+        elif choice == "6":
+            view_all_students()
+        elif choice == "0":
+            print()
+            print("  ╔════════════════════════════════════════╗")
+            print("  ║  Thank you for using GradeBook Manager ║")
+            print("  ║  Have an incredible day!               ║")
+            print("  ╚════════════════════════════════════════╝")
+            print()
+            running = False
+        else:
+            print()
+            print("  Error: '" + choice + "' is not a valid option.")
+            print("  Please enter a number from 0 to 6.")
+
+        if running == True:
+            print()
+            input("  Press Enter to return to the main menu...")
+
+
+# ── Run the program ──────────────────────────────────────────
+main()
