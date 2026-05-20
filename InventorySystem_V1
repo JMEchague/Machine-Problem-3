@@ -1,0 +1,273 @@
+# ============================================================
+# Inventory Management System
+# Date: May 2026
+# Description: A simple inventory system for a retail store
+# ============================================================
+
+from datetime import date
+
+# Global Variables
+products = {}       # stores all products { id: {name, price, stock} }
+sales_history = []  # stores all sales transactions
+
+
+# Helper Functions
+def show_menu():
+    print("\n╔════════════════════════════════════════╗")
+    print("║    INVENTORY MANAGEMENT SYSTEM         ║")
+    print("╠════════════════════════════════════════╣")
+    print("║  1. Add New Product                    ║")
+    print("║  2. Update Product                     ║")
+    print("║  3. Record a Sale                      ║")
+    print("║  4. View Low Stock Alerts              ║")
+    print("║  5. Calculate Total Inventory Value    ║")
+    print("║  6. Search Product                     ║")
+    print("║  7. View Sales History                 ║")
+    print("║  8. Exit                               ║")
+    print("╚════════════════════════════════════════╝")
+
+
+def product_exists(product_id):
+    return product_id in products
+
+
+# ---- Feature 1: Add New Product ----
+
+def add_product():
+    print("\n╔══════════════════════╗")
+    print("║   Add New Product    ║")
+    print("╚══════════════════════╝")
+
+    product_id = input("Enter Product ID: ").strip()
+
+    if product_exists(product_id):
+        print("Error: Product ID already exists!")
+        return
+
+    name = input("Enter Product Name: ").strip()
+
+    try:
+        price = float(input("Enter Price: "))
+        stock = int(input("Enter Initial Stock: "))
+    except ValueError:
+        print("Error: Invalid price or stock value.")
+        return
+
+    products[product_id] = {
+        "name": name,
+        "price": price,
+        "stock": stock
+    }
+
+    print("╔══════════════════════════════════════╗")
+    print(f"║  Product '{name}' added!".ljust(39) + "║")
+    print("╚══════════════════════════════════════╝")
+
+
+# ---- Feature 2: Update Product ----
+
+def update_product():
+    print("\n╔══════════════════════╗")
+    print("║   Update Product     ║")
+    print("╚══════════════════════╝")
+
+    product_id = input("Enter Product ID to update: ").strip()
+
+    if not product_exists(product_id):
+        print("Error: Product not found.")
+        return
+
+    product = products[product_id]
+    print("╔══════════════════════════════════════════╗")
+    print(f"║  Name:  {product['name']}".ljust(43) + "║")
+    print(f"║  Price: P{product['price']}".ljust(43) + "║")
+    print(f"║  Stock: {product['stock']}".ljust(43) + "║")
+    print("╠══════════════════════════════════════════╣")
+    print("║  1. Name   2. Price   3. Stock           ║")
+    print("╚══════════════════════════════════════════╝")
+
+    choice = input("What do you want to update? ").strip()
+
+    if choice == "1":
+        product["name"] = input("Enter new name: ").strip()
+        print("Name updated!")
+    elif choice == "2":
+        try:
+            product["price"] = float(input("Enter new price: "))
+            print("Price updated!")
+        except ValueError:
+            print("Invalid price.")
+    elif choice == "3":
+        try:
+            product["stock"] = int(input("Enter new stock: "))
+            print("Stock updated!")
+        except ValueError:
+            print("Invalid stock value.")
+    else:
+        print("Invalid choice.")
+
+
+# ---- Feature 3: Record a Sale ----
+
+def record_sale():
+    print("\n╔══════════════════════╗")
+    print("║   Record a Sale      ║")
+    print("╚══════════════════════╝")
+
+    product_id = input("Enter Product ID: ").strip()
+
+    if not product_exists(product_id):
+        print("Error: Product not found.")
+        return
+
+    product = products[product_id]
+
+    try:
+        quantity = int(input("Enter quantity sold: "))
+    except ValueError:
+        print("Invalid quantity.")
+        return
+
+    if quantity <= 0:
+        print("Quantity must be greater than zero.")
+        return
+
+    if quantity > product["stock"]:
+        print(f"Not enough stock! Only {product['stock']} left.")
+        return
+
+    product["stock"] -= quantity
+    total = quantity * product["price"]
+
+    sale = {
+        "date": str(date.today()),
+        "product_id": product_id,
+        "product_name": product["name"],
+        "quantity": quantity,
+        "total": total
+    }
+
+    sales_history.append(sale)
+
+    print("╔══════════════════════════════════════════╗")
+    print("║  Sale Recorded!                          ║")
+    print("╠══════════════════════════════════════════╣")
+    print(f"║  Total:           P{total:.2f}".ljust(43) + "║")
+    print(f"║  Remaining stock: {product['stock']}".ljust(43) + "║")
+    print("╚══════════════════════════════════════════╝")
+
+
+# ---- Feature 4: Low Stock Alerts ----
+
+def low_stock_alerts():
+    print("\n╔══════════════════════════════════════════╗")
+    print("║   Low Stock Alerts (stock <= 5)          ║")
+    print("╚══════════════════════════════════════════╝")
+
+    found = False
+    for product_id, product in products.items():
+        if product["stock"] <= 5:
+            print(f"[!] ID: {product_id} | Name: {product['name']} | Stock: {product['stock']}")
+            found = True
+
+    if not found:
+        print("All products have enough stock.")
+
+
+# ---- Feature 5: Calculate Total Inventory Value ----
+
+def total_inventory_value():
+    print("\n╔══════════════════════════════════════════╗")
+    print("║   Total Inventory Value                  ║")
+    print("╚══════════════════════════════════════════╝")
+
+    if not products:
+        print("No products found.")
+        return
+
+    total_value = 0
+    for product_id, product in products.items():
+        value = product["price"] * product["stock"]
+        total_value += value
+        print(f"ID: {product_id} | {product['name']} | Stock: {product['stock']} | Value: P{value:.2f}")
+
+    print("╔══════════════════════════════════════════╗")
+    print(f"║  Total Inventory Value: P{total_value:.2f}".ljust(43) + "║")
+    print("╚══════════════════════════════════════════╝")
+
+
+# ---- Feature 6: Search Product ----
+
+def search_product():
+    print("\n╔══════════════════════╗")
+    print("║   Search Product     ║")
+    print("╚══════════════════════╝")
+
+    keyword = input("Enter Product ID or Name to search: ").strip().lower()
+
+    found = False
+    for product_id, product in products.items():
+        if keyword == product_id.lower() or keyword in product["name"].lower():
+            print("╔══════════════════════════════════════════╗")
+            print(f"║  Found!                                  ║")
+            print("╠══════════════════════════════════════════╣")
+            print(f"║  ID:    {product_id}".ljust(43) + "║")
+            print(f"║  Name:  {product['name']}".ljust(43) + "║")
+            print(f"║  Price: P{product['price']:.2f}".ljust(43) + "║")
+            print(f"║  Stock: {product['stock']}".ljust(43) + "║")
+            print("╚══════════════════════════════════════════╝")
+            found = True
+
+    if not found:
+        print("No product matched your search.")
+
+
+# ---- Feature 7: View Sales History ----
+
+def view_sales_history():
+    print("\n╔══════════════════════╗")
+    print("║   Sales History      ║")
+    print("╚══════════════════════╝")
+
+    if not sales_history:
+        print("No sales recorded yet.")
+        return
+
+    for i, sale in enumerate(sales_history, 1):
+        print(f"{i}. Date: {sale['date']} | Product: {sale['product_name']} | Qty: {sale['quantity']} | Total: P{sale['total']:.2f}")
+
+
+# ---- Main Program ----
+
+def main():
+    print("Welcome to the Inventory Management System!")
+
+    while True:
+        show_menu()
+        choice = input("Enter your choice: ").strip()
+
+        if choice == "1":
+            add_product()
+        elif choice == "2":
+            update_product()
+        elif choice == "3":
+            record_sale()
+        elif choice == "4":
+            low_stock_alerts()
+        elif choice == "5":
+            total_inventory_value()
+        elif choice == "6":
+            search_product()
+        elif choice == "7":
+            view_sales_history()
+        elif choice == "8":
+            print("\n╔══════════════════════╗")
+            print("║      Goodbye!        ║")
+            print("╚══════════════════════╝")
+            break
+        else:
+            print("Invalid choice. Please try again.")
+
+
+# ---- Run the Program ----
+main()
