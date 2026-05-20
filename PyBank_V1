@@ -1,0 +1,625 @@
+account_names    = []   # str  - owner's name
+account_types    = []   # str  - "Savings" or "Checking"
+account_balances = []   # float - current balance
+
+# Transaction history stored as plain strings
+transaction_log  = []   # list of str messages
+
+# Account counter used to make simple account numbers
+account_count = 0
+
+
+# ============================================================
+#   BANNER
+# ============================================================
+
+def show_banner():
+    print("╔══════════════════════════════════════════════╗")
+    print("║                                              ║")
+    print("║          Welcome to  P Y B a n k  !          ║")
+    print("║                                              ║")
+    print("║       Your Simple Easy Banking System        ║")
+    print("║        Secure  |  Simple  |  Reliable        ║")
+    print("║                                              ║")
+    print("╚══════════════════════════════════════════════╝")
+    print()
+
+
+# ============================================================
+#   HELPER FUNCTIONS
+# ============================================================
+
+def print_line():
+    # Prints a divider line
+    print("------------------------------------------------")
+
+
+def print_header(title):
+    # Prints a section header
+    print()
+    print("================================================")
+    print("  " + title)
+    print("================================================")
+
+
+def get_float_input(prompt):
+    # Asks the user for a number and returns it as a float.
+    # Keeps asking until the user enters a valid positive number.
+    while True:
+        raw = input(prompt)
+        # Check if the input is a valid number
+        try:
+            value = float(raw)
+            if value < 0:
+                print("  Error: Amount cannot be negative. Try again.")
+            else:
+                return value
+        except ValueError:
+            print("  Error: '" + raw + "' is not a valid number. Try again.")
+
+
+def get_account_number():
+    # Asks the user for an account number and returns it as an integer.
+    while True:
+        raw = input("  Enter account number: ")
+        try:
+            number = int(raw)
+            return number
+        except ValueError:
+            print("  Error: Account number must be a whole number.")
+
+
+def is_valid_account(account_number):
+    # Returns True if the account number exists, False otherwise.
+    # Account numbers start at 1001
+    index = account_number - 1001
+    if index >= 0 and index < len(account_names):
+        return True
+    else:
+        return False
+
+
+def get_index(account_number):
+    # Converts account number to list index
+    return account_number - 1001
+
+
+def add_to_log(message):
+    # Adds a transaction message to the log
+    transaction_log.append(message)
+
+
+# ============================================================
+#   FEATURE FUNCTIONS
+# ============================================================
+
+# ── 1. Create Account ────────────────────────────────────────
+
+def create_account():
+    global account_count
+
+    print_header("Create New Account")
+
+    # Get owner name
+    name = input("  Enter your full name: ")
+    if name == "":
+        print("  Error: Name cannot be blank.")
+        return
+
+    # Get account type
+    print()
+    print("  Account Types Available:")
+    print("  1 - Savings   (interest: 3.5% per year, min balance: 500)")
+    print("  2 - Checking  (interest: 0.5% per year, min balance: 100)")
+    print()
+    choice = input("  Choose account type (1 or 2): ")
+
+    if choice == "1":
+        account_type = "Savings"
+    elif choice == "2":
+        account_type = "Checking"
+    else:
+        print("  Error: Invalid choice. Please enter 1 or 2.")
+        return
+
+    # Get opening deposit
+    print()
+    opening = get_float_input("  Enter opening deposit (0 if none): ")
+
+    # Check minimum deposit rule
+    if account_type == "Savings" and opening > 0 and opening < 500:
+        print("  Warning: Savings accounts require a minimum of 500 to open.")
+        print("  Account was NOT created.")
+        return
+
+    if account_type == "Checking" and opening > 0 and opening < 100:
+        print("  Warning: Checking accounts require a minimum of 100 to open.")
+        print("  Account was NOT created.")
+        return
+
+    # Save the new account
+    account_count = account_count + 1
+    account_number = 1000 + account_count   # e.g. 1001, 1002, 1003 ...
+
+    account_names.append(name.title())
+    account_types.append(account_type)
+    account_balances.append(opening)
+
+    # Log the transaction
+    log_entry = "Account " + str(account_number) + " created for " + name.title() + " | Type: " + account_type + " | Opening deposit: " + str(opening)
+    add_to_log(log_entry)
+
+    # Show confirmation
+    print()
+    print("  ✔  Account created successfully!")
+    print_line()
+    print("  Account Number : " + str(account_number))
+    print("  Owner Name     : " + name.title())
+    print("  Account Type   : " + account_type)
+    print("  Opening Balance: " + str(opening))
+    print_line()
+    print("  Important: Save your account number - you will need it!")
+    print()
+
+
+# ── 2. Deposit ───────────────────────────────────────────────
+
+def deposit():
+    print_header("Deposit Funds")
+
+    account_number = get_account_number()
+
+    # Check if account exists
+    if is_valid_account(account_number) == False:
+        print("  Error: Account number " + str(account_number) + " does not exist.")
+        return
+
+    index = get_index(account_number)
+
+    # Show current info
+    print()
+    print("  Account Owner  : " + account_names[index])
+    print("  Account Type   : " + account_types[index])
+    print("  Current Balance: " + str(account_balances[index]))
+    print()
+
+    # Get deposit amount
+    amount = get_float_input("  Enter deposit amount: ")
+
+    if amount == 0:
+        print("  Error: Deposit amount must be greater than zero.")
+        return
+
+    # Add to balance
+    account_balances[index] = account_balances[index] + amount
+
+    # Log it
+    log_entry = "DEPOSIT | Account " + str(account_number) + " (" + account_names[index] + ") | Amount: +" + str(amount) + " | New Balance: " + str(account_balances[index])
+    add_to_log(log_entry)
+
+    # Confirm
+    print()
+    print("  ✔  Deposit successful!")
+    print_line()
+    print("  Amount Deposited : " + str(amount))
+    print("  New Balance      : " + str(account_balances[index]))
+    print_line()
+
+
+# ── 3. Withdraw ──────────────────────────────────────────────
+
+def withdraw():
+    print_header("Withdraw Funds")
+
+    account_number = get_account_number()
+
+    if is_valid_account(account_number) == False:
+        print("  Error: Account number " + str(account_number) + " does not exist.")
+        return
+
+    index = get_index(account_number)
+
+    print()
+    print("  Account Owner  : " + account_names[index])
+    print("  Account Type   : " + account_types[index])
+    print("  Current Balance: " + str(account_balances[index]))
+    print()
+
+    amount = get_float_input("  Enter withdrawal amount: ")
+
+    if amount == 0:
+        print("  Error: Withdrawal amount must be greater than zero.")
+        return
+
+    # Check sufficient funds
+    if amount > account_balances[index]:
+        print("  Error: Insufficient funds.")
+        print("  Available balance: " + str(account_balances[index]))
+        print("  Requested amount : " + str(amount))
+        return
+
+    # Deduct from balance
+    account_balances[index] = account_balances[index] - amount
+
+    # Check if balance fell below minimum - apply fee
+    fee_applied = False
+
+    if account_types[index] == "Savings" and account_balances[index] < 500:
+        account_balances[index] = account_balances[index] - 25
+        fee_applied = True
+
+    if account_types[index] == "Checking" and account_balances[index] < 100:
+        account_balances[index] = account_balances[index] - 25
+        fee_applied = True
+
+    # Log it
+    log_entry = "WITHDRAWAL | Account " + str(account_number) + " (" + account_names[index] + ") | Amount: -" + str(amount) + " | New Balance: " + str(account_balances[index])
+    add_to_log(log_entry)
+
+    # Confirm
+    print()
+    print("  ✔  Withdrawal successful!")
+    print_line()
+    print("  Amount Withdrawn : " + str(amount))
+    print("  New Balance      : " + str(account_balances[index]))
+
+    if fee_applied == True:
+        print("  ⚠  Warning: Balance fell below minimum. A fee of 25 was charged.")
+
+    print_line()
+
+
+# ── 4. Transfer ──────────────────────────────────────────────
+
+def transfer():
+    print_header("Transfer Funds")
+
+    print("  -- Source Account (sending money FROM) --")
+    from_number = get_account_number()
+
+    if is_valid_account(from_number) == False:
+        print("  Error: Source account " + str(from_number) + " does not exist.")
+        return
+
+    print()
+    print("  -- Destination Account (sending money TO) --")
+    to_number = get_account_number()
+
+    if is_valid_account(to_number) == False:
+        print("  Error: Destination account " + str(to_number) + " does not exist.")
+        return
+
+    # Cannot transfer to same account
+    if from_number == to_number:
+        print("  Error: Cannot transfer to the same account.")
+        return
+
+    from_index = get_index(from_number)
+    to_index   = get_index(to_number)
+
+    # Show summary before confirming
+    print()
+    print("  From : " + account_names[from_index] + " (Account " + str(from_number) + ")")
+    print("  To   : " + account_names[to_index]   + " (Account " + str(to_number)   + ")")
+    print("  From Balance: " + str(account_balances[from_index]))
+    print()
+
+    amount = get_float_input("  Enter transfer amount: ")
+
+    if amount == 0:
+        print("  Error: Transfer amount must be greater than zero.")
+        return
+
+    if amount > account_balances[from_index]:
+        print("  Error: Insufficient funds in source account.")
+        print("  Available: " + str(account_balances[from_index]))
+        return
+
+    # Perform the transfer
+    account_balances[from_index] = account_balances[from_index] - amount
+    account_balances[to_index]   = account_balances[to_index]   + amount
+
+    # Fee check on source account
+    fee_applied = False
+
+    if account_types[from_index] == "Savings" and account_balances[from_index] < 500:
+        account_balances[from_index] = account_balances[from_index] - 25
+        fee_applied = True
+
+    if account_types[from_index] == "Checking" and account_balances[from_index] < 100:
+        account_balances[from_index] = account_balances[from_index] - 25
+        fee_applied = True
+
+    # Log both sides
+    log_from = "TRANSFER OUT | Account " + str(from_number) + " (" + account_names[from_index] + ") | Sent: -" + str(amount) + " to Account " + str(to_number) + " | Balance: " + str(account_balances[from_index])
+    log_to   = "TRANSFER IN  | Account " + str(to_number)   + " (" + account_names[to_index]   + ") | Received: +" + str(amount) + " from Account " + str(from_number) + " | Balance: " + str(account_balances[to_index])
+
+    add_to_log(log_from)
+    add_to_log(log_to)
+
+    # Confirm
+    print()
+    print("  ✔  Transfer successful!")
+    print_line()
+    print("  Amount Transferred       : " + str(amount))
+    print("  " + account_names[from_index] + " new balance : " + str(account_balances[from_index]))
+    print("  " + account_names[to_index]   + " new balance : " + str(account_balances[to_index]))
+
+    if fee_applied == True:
+        print("  ⚠  Warning: Source balance fell below minimum. A fee of 25 was charged.")
+
+    print_line()
+
+
+# ── 5. Apply Interest ────────────────────────────────────────
+
+def apply_interest():
+    print_header("Apply Interest")
+
+    # Interest rates (from the module requirements)
+    savings_rate  = 3.5 / 100    # 3.5%
+    checking_rate = 0.5 / 100    # 0.5%
+
+    print("  Interest Rates:")
+    print("  Savings  Account : 3.5% per year")
+    print("  Checking Account : 0.5% per year")
+    print()
+
+    # Check if any accounts exist
+    if len(account_names) == 0:
+        print("  No accounts found.")
+        return
+
+    print("  Apply interest to:")
+    print("  1 - A specific account")
+    print("  2 - All accounts")
+    print()
+    choice = input("  Your choice: ")
+
+    if choice == "1":
+        account_number = get_account_number()
+
+        if is_valid_account(account_number) == False:
+            print("  Error: Account " + str(account_number) + " does not exist.")
+            return
+
+        index = get_index(account_number)
+
+        # Calculate interest based on account type
+        if account_types[index] == "Savings":
+            interest = account_balances[index] * savings_rate
+        else:
+            interest = account_balances[index] * checking_rate
+
+        account_balances[index] = account_balances[index] + interest
+
+        # Log it
+        log_entry = "INTEREST | Account " + str(account_number) + " (" + account_names[index] + ") | Interest: +" + str(round(interest, 2)) + " | New Balance: " + str(round(account_balances[index], 2))
+        add_to_log(log_entry)
+
+        print()
+        print("  ✔  Interest applied!")
+        print_line()
+        print("  Account : " + str(account_number) + " - " + account_names[index])
+        print("  Interest Added  : " + str(round(interest, 2)))
+        print("  New Balance     : " + str(round(account_balances[index], 2)))
+        print_line()
+
+    elif choice == "2":
+        confirm = input("  Apply interest to ALL accounts? (yes/no): ")
+
+        if confirm.lower() != "yes":
+            print("  Cancelled.")
+            return
+
+        print()
+        print("  Applying interest to all accounts...")
+        print_line()
+
+        # Loop through all accounts using a counter (for loop style from module)
+        i = 0
+        while i < len(account_names):
+            account_number = 1001 + i
+
+            if account_types[i] == "Savings":
+                interest = account_balances[i] * savings_rate
+            else:
+                interest = account_balances[i] * checking_rate
+
+            account_balances[i] = account_balances[i] + interest
+
+            log_entry = "INTEREST | Account " + str(account_number) + " (" + account_names[i] + ") | +" + str(round(interest, 2))
+            add_to_log(log_entry)
+
+            print("  Account " + str(account_number) + " (" + account_names[i] + ") : +" + str(round(interest, 2)) + "  |  Balance: " + str(round(account_balances[i], 2)))
+
+            i = i + 1
+
+        print_line()
+        print("  ✔  Interest applied to all accounts.")
+
+    else:
+        print("  Error: Invalid choice.")
+
+
+# ── 6. Check Balance ─────────────────────────────────────────
+
+def check_balance():
+    print_header("Check Account Balance")
+
+    account_number = get_account_number()
+
+    if is_valid_account(account_number) == False:
+        print("  Error: Account " + str(account_number) + " does not exist.")
+        return
+
+    index = get_index(account_number)
+
+    # Determine minimum balance for this account type
+    if account_types[index] == "Savings":
+        min_balance = 500
+        rate = "3.5%"
+    else:
+        min_balance = 100
+        rate = "0.5%"
+
+    # Determine account status
+    if account_balances[index] >= min_balance:
+        status = "Good Standing"
+    else:
+        status = "Below Minimum Balance"
+
+    print()
+    print_line()
+    print("  ACCOUNT SUMMARY")
+    print_line()
+    print("  Account Number : " + str(account_number))
+    print("  Owner Name     : " + account_names[index])
+    print("  Account Type   : " + account_types[index])
+    print("  Current Balance: " + str(round(account_balances[index], 2)))
+    print("  Minimum Balance: " + str(min_balance))
+    print("  Interest Rate  : " + rate + " per year")
+    print("  Status         : " + status)
+    print_line()
+
+
+# ── 7. Transaction History ───────────────────────────────────
+
+def show_history():
+    print_header("Transaction History")
+
+    if len(transaction_log) == 0:
+        print("  No transactions recorded yet.")
+        return
+
+    print("  All transactions since the system started:")
+    print()
+
+    # Display each log entry with a number
+    i = 0
+    while i < len(transaction_log):
+        print("  " + str(i + 1) + ".  " + transaction_log[i])
+        i = i + 1
+
+    print()
+    print_line()
+    print("  Total transactions: " + str(len(transaction_log)))
+    print_line()
+
+
+# ── 8. View All Accounts ─────────────────────────────────────
+
+def view_all_accounts():
+    print_header("All Registered Accounts")
+
+    if len(account_names) == 0:
+        print("  No accounts have been created yet.")
+        return
+
+    print_line()
+    print("  No.    Account #    Owner Name            Type       Balance")
+    print_line()
+
+    i = 0
+    while i < len(account_names):
+        account_number = 1001 + i
+        number_str  = str(i + 1) + "."
+        acct_str    = str(account_number)
+        name_str    = account_names[i]
+        type_str    = account_types[i]
+        balance_str = str(round(account_balances[i], 2))
+
+        # Pad with spaces for alignment (basic formatting)
+        print("  " + number_str.ljust(6) + acct_str.ljust(13) + name_str.ljust(22) + type_str.ljust(11) + balance_str)
+
+        i = i + 1
+
+    print_line()
+    print("  Total accounts: " + str(len(account_names)))
+    print_line()
+
+
+# ============================================================
+#   MAIN MENU
+# ============================================================
+
+def show_menu():
+    print()
+    print("  ┌─────────────────────────────────────────┐")
+    print("  │              MAIN MENU                  │")
+    print("  ├─────────────────────────────────────────┤")
+    print("  │  1.  Create New Account                 │")
+    print("  │  2.  Deposit Funds                      │")
+    print("  │  3.  Withdraw Funds                     │")
+    print("  │  4.  Transfer Funds                     │")
+    print("  │  5.  Apply Interest                     │")
+    print("  │  6.  Check Balance / Account Summary    │")
+    print("  │  7.  View Transaction History           │")
+    print("  │  8.  View All Accounts                  │")
+    print("  │  0.  Exit                               │")
+    print("  └─────────────────────────────────────────┘")
+    print()
+
+
+# ============================================================
+#   ENTRY POINT - main() function
+# ============================================================
+
+def main():
+    # Show the welcome banner when the program starts
+    show_banner()
+
+    # Main program loop - keeps running until user chooses 0
+    running = True
+
+    while running == True:
+        show_menu()
+        choice = input("  Enter your choice: ")
+
+        # Route to the correct function based on user choice
+        if choice == "1":
+            create_account()
+
+        elif choice == "2":
+            deposit()
+
+        elif choice == "3":
+            withdraw()
+
+        elif choice == "4":
+            transfer()
+
+        elif choice == "5":
+            apply_interest()
+
+        elif choice == "6":
+            check_balance()
+
+        elif choice == "7":
+            show_history()
+
+        elif choice == "8":
+            view_all_accounts()
+
+        elif choice == "0":
+            print()
+            print("  ╔════════════════════════════════════════╗")
+            print("  ║  Thank you for using PyBank!           ║")
+            print("  ║  Have a great day!                     ║")
+            print("  ╚════════════════════════════════════════╝")
+            print()
+            running = False
+
+        else:
+            print()
+            print("  Error: '" + choice + "' is not a valid option.")
+            print("  Please enter a number from 0 to 8.")
+
+        # Pause before showing the menu again
+        if running == True:
+            print()
+            input("  Press Enter to return to the main menu...")
+
+
+# ── Run the program ──────────────────────────────────────────
+main()
